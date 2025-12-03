@@ -1,5 +1,5 @@
 > 本项目是 https://github.com/TinyCircl/CoreML-YOLOv5-ForPaper 的Python重写版本，将Swift实现转换为Python/PyTorch实现。
-> 感谢原作者 @TinyCircl.AI @xuao575 的优秀工作。
+> 感谢原作者 [@TinyCircl.AI] [@xuao575] 的优秀工作。
 
 
 ##  我的实现
