@@ -17,7 +17,7 @@ st.set_page_config(page_title="YOLOv5 PDF Detector", layout="wide")
 # 初始化 Session State
 if 'detector' not in st.session_state:
     # 权重文件应当在当前目录的 weights 文件夹下
-    st.session_state.detector = YOLOv5Detector(weights_path='weights/yolov5s.pt')
+    st.session_state.detector = YOLOv5Detector(weights_path='weights/best.pt')
 
 def process_file(uploaded_file):
     """主处理流程，对应 Detector.swift 的 processPDF"""
@@ -101,7 +101,7 @@ def main():
                 col1, col2 = st.columns([2, 1])
                 
                 with col1:
-                    st.image(result.annotated_image, caption="检测总览", use_container_width=True)
+                    st.image(result.annotated_image, caption="检测总览", width='stretch')
                 
                 with col2:
                     st.write("##### 提取的插图与 OCR")
@@ -110,7 +110,7 @@ def main():
                     else:
                         for crop, cap in zip(result.crops, result.captions):
                             with st.container(border=True):
-                                st.image(crop, use_container_width=True)
+                                st.image(crop, width='stretch')
                                 if cap:
                                     st.caption(f"📝 {cap}")
                                 else:

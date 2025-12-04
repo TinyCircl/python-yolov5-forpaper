@@ -1,0 +1,20 @@
+# Python 编译缓存
+__pycache__/
+*.pyc
+
+# 虚拟环境 (千万不能上传)
+venv/
+env/
+.env
+
+# 临时文件和缓存
+.DS_Store
+Thumbs.db
+.streamlit/
+
+# IDE 配置
+.vscode/
+.idea/
+
+#pytorch file
+*.pt

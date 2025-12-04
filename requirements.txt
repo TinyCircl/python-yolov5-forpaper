@@ -1,9 +1,11 @@
 streamlit
-torch
-torchvision
-opencv-python-headless
-numpy
+ultralytics
 pdf2image
 pytesseract
 Pillow
-pandas
+numpy
+tqdm
+seaborn
+matplotlib
+psutil
+pyyaml

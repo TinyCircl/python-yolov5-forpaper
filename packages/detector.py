@@ -1,62 +1,63 @@
-import torch
-import numpy as np
+from ultralytics import YOLO
 from PIL import Image
 from .models import Detection
+import torch
 
 class YOLOv5Detector:
-    def __init__(self, weights_path='weights/yolov5s.pt', conf_thres=0.4, iou_thres=0.6):
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.conf_thres = conf_thres
-        self.iou_thres = iou_thres
-        self.class_labels = ["figure"] # 对应 Swift
-        self.colors = [(0, 122, 255)]  # Swift systemBlue (RGB)
-        
-        print(f"Loading model from {weights_path}...")
-        # 使用 ultralytics 的 hub 加载方式，或者直接加载本地 custom 模型
-        # 这里假设用户有 yolov5 仓库或安装了 ultralytics 包
+    def __init__(self, weights_path='weights/best.pt', conf_thres=0.4, iou_thres=0.6):
+        print(f"Loading model from {weights_path} using Ultralytics API...")
         try:
-            self.model = torch.hub.load('ultralytics/yolov5', 'custom', path=weights_path, force_reload=False)
-            self.model.conf = conf_thres
-            self.model.iou = iou_thres
-            # self.model.classes = [0] # 如果你的模型只有 figure 一类，通常是 class 0
-            self.model.to(self.device)
-            print("Model loaded.")
+            # 核心修改：不再使用 torch.hub，而是直接用 ultralytics.YOLO 加载
+            # 这会自动处理版本兼容问题 (grid error)
+            self.model = YOLO(weights_path) 
+            self.conf_thres = conf_thres
+            self.iou_thres = iou_thres
+            
+            # 这里定义你要检测的类别名称
+            # 如果你的 best.pt 训练时只有一类，通常不需要改
+            # 如果需要过滤，可以在 detect 方法里做
+            self.colors = [(0, 122, 255)]  # 默认蓝色 (RGB)
+            
+            print("Model loaded successfully.")
         except Exception as e:
             print(f"Error loading model: {e}")
             self.model = None
 
     def detect(self, image: Image.Image) -> list[Detection]:
-        """
-        执行推理。
-        YOLOv5 的 PyTorch 接口自动处理 Letterbox 和 Normalization。
-        """
         if self.model is None:
             return []
 
-        # 推理
-        results = self.model(image, size=640)
-        
-        # 解析结果 pandas 格式方便处理
-        df = results.pandas().xyxy[0] 
+        # 执行推理
+        # ultralytics 接受 PIL 图片
+        # conf: 置信度阈值, iou: NMS 阈值
+        results = self.model(image, conf=self.conf_thres, iou=self.iou_thres, verbose=False)
         
         detections = []
-        for _, row in df.iterrows():
-            # 过滤类别 (如果模型有多类)
-            if row['name'] not in self.class_labels and len(self.class_labels) > 0:
-                 # 如果模型训练时类名不对，可能需要按 row['class'] 索引判断
-                 pass 
+        
+        # 解析结果 (Ultralytics 的结果格式)
+        for result in results:
+            boxes = result.boxes  # 获取所有的检测框
+            for box in boxes:
+                # 1. 获取坐标 (x1, y1, x2, y2)
+                # xyxy 是 tensor，需要转为 list 并取整
+                coords = box.xyxy[0].tolist()
+                x1, y1, x2, y2 = map(int, coords)
+                
+                # 2. 获取置信度
+                conf = float(box.conf[0])
+                
+                # 3. 获取类别名称
+                cls_id = int(box.cls[0])
+                label_name = result.names[cls_id] if result.names else str(cls_id)
+                
+                # 4. 颜色 (默认取第一个颜色)
+                color = self.colors[0]
 
-            # 坐标
-            box = [int(row['xmin']), int(row['ymin']), int(row['xmax']), int(row['ymax'])]
-            
-            # 颜色
-            color = self.colors[0] # 默认蓝色
-            
-            detections.append(Detection(
-                box=box,
-                confidence=float(row['confidence']),
-                label=row['name'],
-                color=color
-            ))
+                detections.append(Detection(
+                    box=[x1, y1, x2, y2],
+                    confidence=conf,
+                    label=label_name,
+                    color=color
+                ))
             
         return detections
